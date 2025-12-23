@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { ChevronLeft, FileText, Video, ArrowRight, Upload, CheckCircle, Image as ImageIcon, ExternalLink, Eye, MessageSquareQuote } from 'lucide-react';
+import { ChevronLeft, FileText, Video, ArrowRight, Upload, CheckCircle, Image as ImageIcon, ExternalLink, Eye, MessageSquareQuote, Trash2 } from 'lucide-react';
 import { Module, StudentAssignment, UserRole } from '../../types';
 
 interface Props {
@@ -10,20 +10,17 @@ interface Props {
   onBack: () => void;
   onNextToQuiz: () => void;
   onUploadAssignment: (assignment: StudentAssignment) => void;
+  onDeleteAssignment: (id: string) => void;
 }
 
-const ModuleView: React.FC<Props> = ({ module, user, assignments, onBack, onNextToQuiz, onUploadAssignment }) => {
+const ModuleView: React.FC<Props> = ({ module, user, assignments, onBack, onNextToQuiz, onUploadAssignment, onDeleteAssignment }) => {
   const [uploading, setUploading] = useState(false);
 
-  // Robust YouTube URL transformation for embedding
   const getEmbedUrl = (url: string) => {
     if (!url) return '';
     if (url.includes('embed/')) return url;
-    
-    // Support for multiple YouTube link formats
     const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
     const match = url.match(regExp);
-    
     if (match && match[2].length === 11) {
       return `https://www.youtube.com/embed/${match[2]}?autoplay=0&rel=0&modestbranding=1`;
     }
@@ -54,14 +51,29 @@ const ModuleView: React.FC<Props> = ({ module, user, assignments, onBack, onNext
     }
   };
 
-  const videoUrl = getEmbedUrl(module.videoUrl);
-
-  const viewFile = (url: string) => {
-    const newWindow = window.open();
-    if (newWindow) {
-      newWindow.document.write(`<iframe src="${url}" frameborder="0" style="border:0; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%;" allowfullscreen></iframe>`);
+  const viewFile = (dataUrl: string) => {
+    if (!dataUrl || dataUrl === '#') return;
+    try {
+      const parts = dataUrl.split(',');
+      const byteString = atob(parts[1]);
+      const mimeString = parts[0].split(':')[1].split(';')[0];
+      const ab = new ArrayBuffer(byteString.length);
+      const ia = new Uint8Array(ab);
+      for (let i = 0; i < byteString.length; i++) {
+        ia[i] = byteString.charCodeAt(i);
+      }
+      const blob = new Blob([ab], { type: mimeString });
+      const url = URL.createObjectURL(blob);
+      window.open(url, '_blank');
+    } catch (e) {
+      const newWindow = window.open();
+      if (newWindow) {
+        newWindow.document.write(`<iframe src="${dataUrl}" frameborder="0" style="border:0; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%;" allowfullscreen></iframe>`);
+      }
     }
   };
+
+  const videoUrl = getEmbedUrl(module.videoUrl);
 
   return (
     <div className="max-w-7xl mx-auto p-6 md:p-10">
@@ -83,9 +95,7 @@ const ModuleView: React.FC<Props> = ({ module, user, assignments, onBack, onNext
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
-            {/* CONTENT AREA */}
             <div className="lg:col-span-8 space-y-10">
-              {/* VIDEO PLAYER */}
               <div className="aspect-video bg-black rounded-[3rem] overflow-hidden shadow-2xl border-8 border-white ring-1 ring-slate-100">
                 {videoUrl ? (
                   <iframe 
@@ -104,7 +114,6 @@ const ModuleView: React.FC<Props> = ({ module, user, assignments, onBack, onNext
                 )}
               </div>
 
-              {/* TEXT MATERIAL */}
               <div className="bg-white border-2 border-slate-50 p-12 rounded-[3rem] shadow-sm relative overflow-hidden group">
                 <div className="absolute -top-10 -right-10 opacity-5 group-hover:rotate-12 transition-transform duration-700 pointer-events-none">
                   <FileText size={200} />
@@ -118,26 +127,22 @@ const ModuleView: React.FC<Props> = ({ module, user, assignments, onBack, onNext
               </div>
             </div>
 
-            {/* SIDEBAR AREA */}
             <div className="lg:col-span-4 space-y-8">
-              {/* PDF MATERIAL DOWNLOAD/VIEW */}
               <div className="bg-white border-2 border-slate-100 p-8 rounded-[2.5rem] shadow-sm flex flex-col items-center text-center">
                 <div className="bg-sky-50 p-5 rounded-3xl text-sky-600 mb-6">
                   <FileText size={40} />
                 </div>
                 <h4 className="font-black text-slate-800 mb-2">Modul PDF Lengkap</h4>
                 <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-6 leading-relaxed">Pelajari detail teknis materi melalui berkas PDF resmi.</p>
-                <a 
-                  href={module.pdfUrl} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
+                <button 
+                  onClick={() => viewFile(module.pdfUrl)} 
                   className={`w-full py-5 ${module.pdfUrl === '#' ? 'bg-slate-100 text-slate-300 cursor-not-allowed' : 'bg-[#0f172a] text-white hover:bg-sky-600 shadow-xl shadow-slate-100'} font-black rounded-2xl transition-all text-sm uppercase tracking-widest flex items-center justify-center gap-3`}
+                  disabled={module.pdfUrl === '#'}
                 >
                   Buka Berkas PDF <Eye size={18} />
-                </a>
+                </button>
               </div>
 
-              {/* ASSIGNMENT UPLOAD & FEEDBACK */}
               <div className="bg-[#0f172a] text-white p-8 rounded-[3rem] shadow-2xl relative overflow-hidden">
                 <div className="absolute top-0 right-0 p-8 opacity-5 pointer-events-none">
                   <Upload size={120} />
@@ -162,7 +167,7 @@ const ModuleView: React.FC<Props> = ({ module, user, assignments, onBack, onNext
                   <div className="space-y-4 max-h-80 overflow-y-auto pr-2 custom-scrollbar mt-6">
                     {assignments.length === 0 && <p className="text-center text-slate-500 text-[10px] font-black py-4 uppercase tracking-widest">Belum ada tugas terkirim</p>}
                     {assignments.map((asg) => (
-                      <div key={asg.id} className="p-5 bg-white/5 border border-white/10 rounded-[2rem] flex flex-col gap-4 group transition-all hover:bg-white/10">
+                      <div key={asg.id} className="p-5 bg-white/5 border border-white/10 rounded-[2rem] flex flex-col gap-4 group transition-all hover:bg-white/10 relative">
                         <div className="flex justify-between items-center">
                           <div className="flex items-center gap-3 overflow-hidden">
                             <div className="bg-sky-500/20 p-2 rounded-lg text-sky-400 shrink-0">
@@ -170,20 +175,29 @@ const ModuleView: React.FC<Props> = ({ module, user, assignments, onBack, onNext
                             </div>
                             <div className="overflow-hidden">
                               <p className="text-[10px] font-black truncate text-slate-300 uppercase leading-tight">{asg.fileName}</p>
-                              <button 
-                                onClick={() => viewFile(asg.fileUrl)}
-                                className="text-[9px] font-black text-sky-400 hover:text-sky-300 uppercase tracking-widest flex items-center gap-1 mt-0.5"
-                              >
-                                <Eye size={10} /> Lihat Berkas
-                              </button>
+                              <div className="flex gap-4 mt-1">
+                                <button 
+                                  onClick={() => viewFile(asg.fileUrl)}
+                                  className="text-[9px] font-black text-sky-400 hover:text-sky-300 uppercase tracking-widest flex items-center gap-1"
+                                >
+                                  <Eye size={10} /> Lihat
+                                </button>
+                                {asg.grade === null && (
+                                  <button 
+                                    onClick={() => onDeleteAssignment(asg.id)}
+                                    className="text-[9px] font-black text-rose-400 hover:text-rose-300 uppercase tracking-widest flex items-center gap-1"
+                                  >
+                                    <Trash2 size={10} /> Hapus
+                                  </button>
+                                )}
+                              </div>
                             </div>
                           </div>
                           {asg.grade !== null && <span className="bg-emerald-500 text-white px-3 py-1 rounded-lg text-[10px] font-black shadow-lg">NILAI: {asg.grade}</span>}
                         </div>
                         
-                        {/* TEACHER FEEDBACK AREA */}
                         {asg.feedback && (
-                          <div className="bg-sky-500/10 border border-sky-500/20 p-4 rounded-2xl relative">
+                          <div className="bg-sky-500/10 border border-sky-500/20 p-4 rounded-2xl mt-2 relative">
                             <div className="absolute -top-3 -right-2 bg-sky-500 p-1.5 rounded-full text-white">
                               <MessageSquareQuote size={12} />
                             </div>
@@ -197,7 +211,6 @@ const ModuleView: React.FC<Props> = ({ module, user, assignments, onBack, onNext
                 </div>
               </div>
 
-              {/* QUIZ ACCESS */}
               <div className="bg-gradient-to-br from-sky-600 to-sky-700 p-8 rounded-[3rem] shadow-2xl text-center text-white">
                 <h4 className="font-black mb-2 uppercase tracking-widest text-sm">Evaluasi Mandiri</h4>
                 <p className="text-sky-100 text-xs font-bold mb-8 leading-relaxed">Siap untuk menguji pemahaman Anda? Kerjakan kuis interaktif sekarang.</p>

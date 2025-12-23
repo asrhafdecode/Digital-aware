@@ -52,6 +52,15 @@ const App: React.FC = () => {
     }));
   };
 
+  const handleDeleteAssignment = (assignmentId: string) => {
+    if (window.confirm('Apakah Anda yakin ingin menghapus tugas ini?')) {
+      setState(prev => ({
+        ...prev,
+        assignments: prev.assignments.filter(a => a.id !== assignmentId)
+      }));
+    }
+  };
+
   const handleGradeUpdate = (assignmentId: string, grade: number, feedback: string) => {
     setState(prev => ({
       ...prev,
@@ -109,6 +118,7 @@ const App: React.FC = () => {
           onBack={() => setView('student-dashboard')}
           onNextToQuiz={() => setView('quiz-view')}
           onUploadAssignment={handleAssignmentUpload}
+          onDeleteAssignment={handleDeleteAssignment}
         />
       )}
 
@@ -148,7 +158,6 @@ const App: React.FC = () => {
   );
 };
 
-// Internal component for naming consistency
 const ShieldTeacherLogin = TeacherLogin;
 
 export default App;

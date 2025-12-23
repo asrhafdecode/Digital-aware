@@ -33,23 +33,36 @@ const TeacherDashboard: React.FC<Props> = ({ modules, assignments, quizResults =
   const quizImageInputRef = useRef<HTMLInputElement>(null);
   const [activeQuizQuestionIdx, setActiveQuizQuestionIdx] = useState<number | null>(null);
 
-  // Helper to view any base64/URL file in a new interactive tab via iframe
-  const viewFile = (url: string) => {
-    if (!url || url === '#') return;
-    const newWindow = window.open();
-    if (newWindow) {
-      newWindow.document.write(`
-        <html>
-          <head><title>Preview Berkas - Digital Aware</title></head>
-          <body style="margin:0; overflow:hidden;">
-            <iframe src="${url}" frameborder="0" style="border:0; width:100%; height:100%;" allowfullscreen></iframe>
-          </body>
-        </html>
-      `);
+  // Robust function to view student uploads
+  const viewFile = (dataUrl: string) => {
+    if (!dataUrl || dataUrl === '#') {
+      alert("Berkas tidak ditemukan atau belum diunggah.");
+      return;
+    }
+    try {
+      const parts = dataUrl.split(',');
+      if (parts.length < 2) throw new Error("Format berkas tidak valid");
+      
+      const byteString = atob(parts[1]);
+      const mimeString = parts[0].split(':')[1].split(';')[0];
+      const ab = new ArrayBuffer(byteString.length);
+      const ia = new Uint8Array(ab);
+      for (let i = 0; i < byteString.length; i++) {
+        ia[i] = byteString.charCodeAt(i);
+      }
+      const blob = new Blob([ab], { type: mimeString });
+      const url = URL.createObjectURL(blob);
+      window.open(url, '_blank');
+    } catch (e) {
+      console.error("Error viewing file:", e);
+      // Fallback
+      const newWindow = window.open();
+      if (newWindow) {
+        newWindow.document.write(`<iframe src="${dataUrl}" frameborder="0" style="border:0; width:100%; height:100%;" allowfullscreen></iframe>`);
+      }
     }
   };
 
-  // Derived state to find the currently selected assignment for grading
   const selectedAssignment = assignments.find(a => a.id === gradingStudentId);
 
   const handleSaveModuleChanges = () => {
@@ -63,6 +76,7 @@ const TeacherDashboard: React.FC<Props> = ({ modules, assignments, quizResults =
     if (gradingStudentId) {
       onUpdateGrade(gradingStudentId, gradeInput, feedbackInput);
       setGradingStudentId(null);
+      alert("Nilai dan feedback berhasil disimpan!");
     }
   };
 
@@ -70,6 +84,7 @@ const TeacherDashboard: React.FC<Props> = ({ modules, assignments, quizResults =
     if (editingQuizId) {
       onUpdateQuizGrade(editingQuizId, manualQuizScore);
       setEditingQuizId(null);
+      alert("Skor kuis berhasil diperbarui!");
     }
   };
 
@@ -342,7 +357,7 @@ const TeacherDashboard: React.FC<Props> = ({ modules, assignments, quizResults =
              <div className="space-y-8">
                 <div className="flex p-2 bg-slate-100 rounded-2xl w-fit">
                    <button onClick={() => setGradeSubTab('assignments')} className={`px-8 py-3 rounded-xl font-black text-xs uppercase transition-all ${gradeSubTab === 'assignments' ? 'bg-white text-sky-600 shadow-md' : 'text-slate-400'}`}>Penilaian Tugas</button>
-                   <button onClick={() => setGradeSubTab('quizzes')} className={`px-8 py-3 rounded-xl font-black text-xs uppercase transition-all ${gradeSubTab === 'quizzes' ? 'bg-white text-sky-600 shadow-md' : 'text-slate-400'}`}>Edit Nilai Kuis</button>
+                   <button onClick={() => setGradeSubTab('quizzes')} className={`px-8 py-3 rounded-xl font-black text-xs uppercase transition-all ${gradeSubTab === 'quizzes' ? 'bg-white text-sky-600 shadow-md' : 'text-slate-400'}`}>Koreksi Nilai Kuis</button>
                 </div>
 
                 {gradeSubTab === 'assignments' ? (
@@ -379,21 +394,18 @@ const TeacherDashboard: React.FC<Props> = ({ modules, assignments, quizResults =
                       <div className="col-span-8">
                          {selectedAssignment ? (
                            <div className="bg-white rounded-[4rem] border border-slate-100 p-16 relative overflow-hidden h-[700px] flex flex-col shadow-sm">
-                              <h3 className="text-4xl font-black text-slate-800 mb-10 tracking-tighter">Beri Nilai: {selectedAssignment.studentName}</h3>
+                              <h3 className="text-4xl font-black text-slate-800 mb-10 tracking-tighter">Penilaian: {selectedAssignment.studentName}</h3>
                               
                               <div className="flex-1 overflow-y-auto pr-4 custom-scrollbar space-y-10">
-                                 {/* File Visual Preview for Teacher */}
                                  <div className="bg-slate-50 p-10 rounded-[2.5rem] border-2 border-slate-100">
                                     <div className="flex justify-between items-center mb-6">
                                        <div className="flex items-center gap-4">
                                           {selectedAssignment.fileUrl.startsWith('data:image/') ? <ImageIcon className="text-sky-500" /> : <FileText className="text-sky-500" />}
                                           <span className="font-black text-slate-800 text-sm">{selectedAssignment.fileName}</span>
                                        </div>
-                                       <div className="flex gap-2">
-                                          <button onClick={() => viewFile(selectedAssignment.fileUrl)} className="bg-white px-6 py-2 rounded-xl text-sky-600 font-black text-xs flex items-center gap-2 hover:bg-sky-50 shadow-sm transition-all border border-sky-100">
-                                             Buka File Full <ExternalLink size={14} />
-                                          </button>
-                                       </div>
+                                       <button onClick={() => viewFile(selectedAssignment.fileUrl)} className="bg-white px-6 py-2 rounded-xl text-sky-600 font-black text-xs flex items-center gap-2 hover:bg-sky-50 shadow-sm transition-all border border-sky-100">
+                                          Lihat Berkas <ExternalLink size={14} />
+                                       </button>
                                     </div>
                                     
                                     {selectedAssignment.fileUrl.startsWith('data:image/') ? (
@@ -407,7 +419,7 @@ const TeacherDashboard: React.FC<Props> = ({ modules, assignments, quizResults =
                                        <div className="bg-white p-12 rounded-3xl text-center border-2 border-dashed border-slate-200">
                                           <FileText size={64} className="mx-auto text-slate-300 mb-4" />
                                           <p className="text-slate-500 font-black text-xs mb-4">BERKAS PDF TERSEDIA</p>
-                                          <button onClick={() => viewFile(selectedAssignment.fileUrl)} className="inline-flex items-center gap-2 bg-sky-500 text-white px-8 py-3 rounded-2xl font-black text-xs hover:bg-sky-600 shadow-lg shadow-sky-500/20">LIHAT PDF SEKARANG <Eye size={16} /></button>
+                                          <button onClick={() => viewFile(selectedAssignment.fileUrl)} className="inline-flex items-center gap-2 bg-sky-500 text-white px-8 py-3 rounded-2xl font-black text-xs hover:bg-sky-600 shadow-lg">BUKA PDF <Eye size={16} /></button>
                                        </div>
                                     )}
                                  </div>
@@ -419,18 +431,18 @@ const TeacherDashboard: React.FC<Props> = ({ modules, assignments, quizResults =
                                     </div>
                                     <div>
                                       <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Feedback Guru</label>
-                                      <textarea className="w-full p-8 bg-slate-50 border-4 border-slate-50 rounded-[2.5rem] h-full outline-none focus:border-sky-500 font-bold italic text-slate-600 text-sm" placeholder="Tulis masukan..." value={feedbackInput} onChange={e => setFeedbackInput(e.target.value)} />
+                                      <textarea className="w-full p-8 bg-slate-50 border-4 border-slate-50 rounded-[2.5rem] h-full outline-none focus:border-sky-500 font-bold italic text-slate-600 text-sm" placeholder="Tulis masukan untuk siswa..." value={feedbackInput} onChange={e => setFeedbackInput(e.target.value)} />
                                     </div>
                                  </div>
                               </div>
 
                               <div className="flex gap-4 mt-10">
-                                <button onClick={handleSaveGrade} className="flex-1 py-5 bg-sky-600 text-white font-black rounded-[2rem] shadow-xl hover:bg-sky-700 transition-all uppercase tracking-widest text-xs">Simpan Nilai</button>
+                                <button onClick={handleSaveGrade} className="flex-1 py-5 bg-sky-600 text-white font-black rounded-[2rem] shadow-xl hover:bg-sky-700 transition-all uppercase tracking-widest text-xs">Simpan Nilai & Feedback</button>
                                 <button onClick={() => setGradingStudentId(null)} className="px-10 py-5 bg-slate-100 text-slate-500 font-black rounded-[2rem] hover:bg-slate-200 transition-all uppercase tracking-widest text-xs">Batal</button>
                               </div>
                            </div>
                          ) : (
-                           <div className="bg-white rounded-[4rem] border-4 border-dashed border-slate-50 h-full min-h-[500px] flex flex-col items-center justify-center p-20 text-center"><Users size={80} className="text-slate-200 mb-8" /><p className="text-slate-400 font-bold uppercase tracking-widest text-xs">Pilih tugas di sebelah kiri untuk memberikan nilai.</p></div>
+                           <div className="bg-white rounded-[4rem] border-4 border-dashed border-slate-50 h-full min-h-[500px] flex flex-col items-center justify-center p-20 text-center"><Users size={80} className="text-slate-200 mb-8" /><p className="text-slate-400 font-bold uppercase tracking-widest text-xs">Pilih tugas di sebelah kiri untuk mulai menilai.</p></div>
                          )}
                       </div>
                    </div>
@@ -442,7 +454,7 @@ const TeacherDashboard: React.FC<Props> = ({ modules, assignments, quizResults =
                                <th className="px-10 py-6">Siswa / NIS</th>
                                <th className="px-10 py-6">Modul Kuis</th>
                                <th className="px-10 py-6">Skor Akhir</th>
-                               <th className="px-10 py-6">Status</th>
+                               <th className="px-10 py-6">Tipe Nilai</th>
                                <th className="px-10 py-6">Aksi</th>
                             </tr>
                          </thead>
@@ -474,9 +486,15 @@ const TeacherDashboard: React.FC<Props> = ({ modules, assignments, quizResults =
                                        <span className="text-2xl font-black text-sky-600">{Math.round(res.score)}<span className="text-xs opacity-50 ml-1">/100</span></span>
                                      )}
                                   </td>
-                                  <td className="px-10 py-8">{res.isManualOverride ? <span className="px-3 py-1 bg-amber-50 text-amber-600 text-[9px] font-black rounded-full border border-amber-100 uppercase tracking-widest">KOREKSI GURU</span> : <span className="px-3 py-1 bg-emerald-50 text-emerald-600 text-[9px] font-black rounded-full border border-emerald-100 uppercase tracking-widest">OTOMATIS</span>}</td>
                                   <td className="px-10 py-8">
-                                     <button onClick={() => { setEditingQuizId(res.id); setManualQuizScore(res.score); }} className="flex items-center gap-2 px-6 py-2 bg-sky-100 text-sky-600 font-black rounded-xl hover:bg-sky-200 transition-all text-[10px] uppercase tracking-widest"><Edit3 size={14} /> Koreksi Nilai</button>
+                                     {res.isManualOverride ? (
+                                       <span className="px-3 py-1 bg-amber-50 text-amber-600 text-[9px] font-black rounded-full border border-amber-100 uppercase tracking-widest flex items-center gap-1"><Award size={10}/> Koreksi Guru</span>
+                                     ) : (
+                                       <span className="px-3 py-1 bg-emerald-50 text-emerald-600 text-[9px] font-black rounded-full border border-emerald-100 uppercase tracking-widest">Sistem Otomatis</span>
+                                     )}
+                                  </td>
+                                  <td className="px-10 py-8">
+                                     <button onClick={() => { setEditingQuizId(res.id); setManualQuizScore(res.score); }} className="flex items-center gap-2 px-6 py-2 bg-sky-100 text-sky-600 font-black rounded-xl hover:bg-sky-200 transition-all text-[10px] uppercase tracking-widest"><Edit3 size={14} /> Koreksi Skor</button>
                                   </td>
                                </tr>
                             ))}
