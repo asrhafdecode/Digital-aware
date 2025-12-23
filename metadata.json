@@ -1,0 +1,8 @@
+{
+  "name": "Digital Aware E-Learning Pro",
+  "description": "Powerful e-learning platform with dynamic module editor, quiz image uploads, and manual grading system.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
