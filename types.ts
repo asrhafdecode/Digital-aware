@@ -16,6 +16,7 @@ export interface QuizQuestion {
   imageUrl?: string;
   options: QuizOption[];
   correctOptionId: string;
+  points: number; // Menentukan bobot nilai tiap soal
 }
 
 export interface Module {
@@ -43,6 +44,13 @@ export interface StudentAssignment {
   feedback: string;
 }
 
+export interface QuizAnswerRecord {
+  questionId: string;
+  selectedOptionId: string;
+  isCorrect: boolean;
+  earnedPoints: number;
+}
+
 export interface StudentQuizResult {
   id: string;
   studentName: string;
@@ -51,6 +59,7 @@ export interface StudentQuizResult {
   score: number;
   timestamp: string;
   isManualOverride?: boolean;
+  studentAnswers?: QuizAnswerRecord[]; // Detail jawaban untuk koreksi per soal
 }
 
 export interface AppState {

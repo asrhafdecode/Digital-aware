@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { getInitialState, saveState } from './services/stateService';
-import { AppState, UserRole, Module, StudentAssignment, StudentQuizResult } from './types';
+import { AppState, UserRole, Module, StudentAssignment, StudentQuizResult, QuizAnswerRecord } from './types';
 import LandingPage from './components/LandingPage';
 import StudentLogin from './components/student/StudentLogin';
 import TeacherLogin from './components/teacher/TeacherLogin';
@@ -68,10 +68,19 @@ const App: React.FC = () => {
     }));
   };
 
-  const handleQuizGradeUpdate = (resultId: string, newScore: number) => {
+  const handleQuizGradeUpdate = (resultId: string, newScore: number, updatedAnswers?: QuizAnswerRecord[]) => {
     setState(prev => ({
       ...prev,
-      quizResults: prev.quizResults.map(r => r.id === resultId ? { ...r, score: newScore, isManualOverride: true } : r)
+      quizResults: prev.quizResults.map(r => 
+        r.id === resultId 
+          ? { 
+              ...r, 
+              score: newScore, 
+              isManualOverride: true, 
+              studentAnswers: updatedAnswers || r.studentAnswers 
+            } 
+          : r
+      )
     }));
   };
 
@@ -94,7 +103,7 @@ const App: React.FC = () => {
       )}
 
       {view === 'teacher-login' && (
-        <ShieldTeacherLogin 
+        <TeacherLogin 
           onBack={() => setView('landing')} 
           onLogin={handleTeacherLogin} 
         />
@@ -126,7 +135,7 @@ const App: React.FC = () => {
         <QuizView 
           module={activeModule} 
           onBack={() => setView('module-detail')}
-          onFinish={(score) => {
+          onFinish={(score, answers) => {
             setState(prev => ({
               ...prev,
               quizResults: [...prev.quizResults, {
@@ -135,7 +144,8 @@ const App: React.FC = () => {
                 nis: state.currentUser!.nis,
                 moduleId: activeModule.id,
                 score,
-                timestamp: new Date().toISOString()
+                timestamp: new Date().toISOString(),
+                studentAnswers: answers
               }]
             }));
             setView('student-dashboard');
@@ -157,7 +167,5 @@ const App: React.FC = () => {
     </div>
   );
 };
-
-const ShieldTeacherLogin = TeacherLogin;
 
 export default App;

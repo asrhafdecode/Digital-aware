@@ -43,7 +43,9 @@ export const INITIAL_MODULES: Module[] = [
           { id: 'c', text: 'Tidak memiliki tanggal publikasi' },
           { id: 'd', text: 'Hanya tersedia di media sosial' }
         ],
-        correctOptionId: 'b'
+        correctOptionId: 'b',
+        // Fix: Added missing 'points' property to match QuizQuestion interface
+        points: 10
       }
     ]
   },
