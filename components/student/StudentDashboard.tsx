@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { LogOut, Home, GraduationCap, ChevronRight, BarChart3, Award, Clock } from 'lucide-react';
+import { LogOut, Home, GraduationCap, ChevronRight, BarChart3, Award, Clock, MessageSquare } from 'lucide-react';
 import { Module, UserRole, StudentQuizResult } from '../../types';
 import { IconMap } from '../../constants';
 
@@ -119,6 +119,18 @@ const StudentDashboard: React.FC<Props> = ({ user, modules, quizResults = [], on
                           <p className="text-4xl font-black text-slate-800 leading-none">{Math.round(res.score)}</p>
                           <p className="text-sm font-bold text-slate-300 mb-1">/ 100</p>
                        </div>
+                       
+                       {/* FEEDBACK KUIS */}
+                       {res.feedback && (
+                         <div className="mt-4 p-4 bg-sky-500/10 border border-sky-500/20 rounded-2xl relative z-10">
+                            <div className="flex items-center gap-2 mb-1">
+                               <MessageSquare size={12} className="text-sky-600" />
+                               <span className="text-[8px] font-black uppercase text-sky-600 tracking-widest">Feedback Guru:</span>
+                            </div>
+                            <p className="text-[10px] text-sky-800 font-bold italic leading-relaxed">"{res.feedback}"</p>
+                         </div>
+                       )}
+
                        <div className="mt-4 h-1.5 w-full bg-slate-200 rounded-full overflow-hidden relative z-10">
                           <div 
                             className={`h-full transition-all duration-1000 ${res.score >= 80 ? 'bg-emerald-500' : res.score >= 60 ? 'bg-sky-500' : 'bg-rose-500'}`} 

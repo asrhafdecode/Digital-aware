@@ -16,7 +16,15 @@ export interface QuizQuestion {
   imageUrl?: string;
   options: QuizOption[];
   correctOptionId: string;
-  points: number; // Menentukan bobot nilai tiap soal
+  points: number;
+}
+
+export type ContentBlockType = 'text' | 'image';
+
+export interface ContentBlock {
+  id: string;
+  type: ContentBlockType;
+  value: string;
 }
 
 export interface Module {
@@ -25,11 +33,16 @@ export interface Module {
   topic: string;
   description: string;
   videoUrl: string;
+  videoDescription: string;
   pdfUrl: string;
-  content: string;
+  pdfDescription?: string; // Deskripsi penjelasan materi PDF
+  content: string; // Legacy content (string)
+  contentBlocks?: ContentBlock[]; // Materi berbasis blok (teks & gambar)
   assignmentInstruction: string;
   questions: QuizQuestion[];
   icon: string;
+  externalQuizUrl?: string;
+  externalQuizType?: string;
 }
 
 export interface StudentAssignment {
@@ -58,8 +71,9 @@ export interface StudentQuizResult {
   moduleId: string;
   score: number;
   timestamp: string;
+  feedback?: string;
   isManualOverride?: boolean;
-  studentAnswers?: QuizAnswerRecord[]; // Detail jawaban untuk koreksi per soal
+  studentAnswers?: QuizAnswerRecord[];
 }
 
 export interface AppState {

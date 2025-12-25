@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { ChevronLeft, FileText, Video, ArrowRight, Upload, CheckCircle, Image as ImageIcon, ExternalLink, Eye, MessageSquareQuote, Trash2 } from 'lucide-react';
+import { ChevronLeft, FileText, Video, ArrowRight, Upload, CheckCircle, Image as ImageIcon, ExternalLink, Eye, MessageSquareQuote, Trash2, Globe, Info, X } from 'lucide-react';
 import { Module, StudentAssignment, UserRole } from '../../types';
 
 interface Props {
@@ -10,7 +10,7 @@ interface Props {
   onBack: () => void;
   onNextToQuiz: () => void;
   onUploadAssignment: (assignment: StudentAssignment) => void;
-  onDeleteAssignment: (id: string) => void;
+  onDeleteAssignment: (id: string) => boolean;
 }
 
 const ModuleView: React.FC<Props> = ({ module, user, assignments, onBack, onNextToQuiz, onUploadAssignment, onDeleteAssignment }) => {
@@ -96,33 +96,66 @@ const ModuleView: React.FC<Props> = ({ module, user, assignments, onBack, onNext
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
             <div className="lg:col-span-8 space-y-10">
-              <div className="aspect-video bg-black rounded-[3rem] overflow-hidden shadow-2xl border-8 border-white ring-1 ring-slate-100">
-                {videoUrl ? (
-                  <iframe 
-                    className="w-full h-full"
-                    src={videoUrl}
-                    title="Materi Video"
-                    frameBorder="0"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                  ></iframe>
-                ) : (
-                  <div className="flex items-center justify-center h-full text-white flex-col gap-4">
-                    <Video size={64} className="text-slate-700" />
-                    <p className="font-black text-slate-500 uppercase tracking-widest text-xs">Video Belum Tersedia</p>
+              <div className="space-y-6">
+                <div className="aspect-video bg-black rounded-[3rem] overflow-hidden shadow-2xl border-8 border-white ring-1 ring-slate-100">
+                  {videoUrl ? (
+                    <iframe 
+                      className="w-full h-full"
+                      src={videoUrl}
+                      title="Materi Video"
+                      frameBorder="0"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                    ></iframe>
+                  ) : (
+                    <div className="flex items-center justify-center h-full text-white flex-col gap-4">
+                      <Video size={64} className="text-slate-700" />
+                      <p className="font-black text-slate-500 uppercase tracking-widest text-xs">Video Belum Tersedia</p>
+                    </div>
+                  )}
+                </div>
+                
+                {module.videoDescription && (
+                  <div className="bg-sky-50 border-l-8 border-sky-500 p-8 rounded-r-[2rem] shadow-sm">
+                    <h4 className="flex items-center gap-3 text-sky-800 font-black uppercase tracking-widest text-xs mb-3">
+                      <Info size={18} /> Tentang Video Ini
+                    </h4>
+                    <p className="text-sky-900 font-medium text-base leading-relaxed whitespace-pre-wrap italic">
+                      {module.videoDescription}
+                    </p>
                   </div>
                 )}
               </div>
 
+              {/* AREA PENJELASAN MATERI BERBASIS BLOK */}
               <div className="bg-white border-2 border-slate-50 p-12 rounded-[3rem] shadow-sm relative overflow-hidden group">
                 <div className="absolute -top-10 -right-10 opacity-5 group-hover:rotate-12 transition-transform duration-700 pointer-events-none">
                   <FileText size={200} />
                 </div>
-                <h3 className="text-2xl font-black text-slate-800 mb-8 flex items-center gap-4">
+                <h3 className="text-2xl font-black text-slate-800 mb-10 flex items-center gap-4">
                   <div className="bg-sky-500 p-2 rounded-xl text-white"><FileText size={20} /></div> Penjelasan Materi
                 </h3>
-                <div className="prose prose-slate max-w-none text-slate-600 leading-relaxed font-medium text-lg whitespace-pre-wrap">
-                  {module.content || "Teks materi belum ditambahkan oleh guru."}
+                
+                <div className="space-y-10 relative z-10">
+                   {(module.contentBlocks && module.contentBlocks.length > 0) ? (
+                     module.contentBlocks.map((block) => (
+                       <div key={block.id}>
+                          {block.type === 'text' ? (
+                            <div className="prose prose-slate max-w-none text-slate-600 leading-relaxed font-medium text-lg whitespace-pre-wrap">
+                              {block.value}
+                            </div>
+                          ) : (
+                            <div className="my-10 rounded-[2.5rem] overflow-hidden border-4 border-white shadow-2xl ring-1 ring-slate-100 bg-slate-50 flex justify-center">
+                               <img src={block.value} className="max-w-full h-auto object-contain" alt="Visual Materi" onError={(e) => (e.target as HTMLImageElement).src = 'https://via.placeholder.com/800x400?text=Gambar+Materi+Tidak+Ditemukan'} />
+                            </div>
+                          )}
+                       </div>
+                     ))
+                   ) : (
+                     <div className="prose prose-slate max-w-none text-slate-600 leading-relaxed font-medium text-lg whitespace-pre-wrap">
+                       {module.content || "Teks materi belum ditambahkan oleh guru."}
+                     </div>
+                   )}
                 </div>
               </div>
             </div>
@@ -133,7 +166,14 @@ const ModuleView: React.FC<Props> = ({ module, user, assignments, onBack, onNext
                   <FileText size={40} />
                 </div>
                 <h4 className="font-black text-slate-800 mb-2">Modul PDF Lengkap</h4>
-                <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-6 leading-relaxed">Pelajari detail teknis materi melalui berkas PDF resmi.</p>
+                
+                {module.pdfDescription && (
+                  <p className="text-slate-500 text-xs font-bold mb-6 italic leading-relaxed px-4">
+                    "{module.pdfDescription}"
+                  </p>
+                )}
+                
+                <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest mb-6 leading-relaxed">Pelajari detail teknis materi melalui berkas PDF resmi.</p>
                 <button 
                   onClick={() => viewFile(module.pdfUrl)} 
                   className={`w-full py-5 ${module.pdfUrl === '#' ? 'bg-slate-100 text-slate-300 cursor-not-allowed' : 'bg-[#0f172a] text-white hover:bg-sky-600 shadow-xl shadow-slate-100'} font-black rounded-2xl transition-all text-sm uppercase tracking-widest flex items-center justify-center gap-3`}
@@ -176,17 +216,13 @@ const ModuleView: React.FC<Props> = ({ module, user, assignments, onBack, onNext
                             <div className="overflow-hidden">
                               <p className="text-[10px] font-black truncate text-slate-300 uppercase leading-tight">{asg.fileName}</p>
                               <div className="flex gap-4 mt-1">
-                                <button 
-                                  onClick={() => viewFile(asg.fileUrl)}
-                                  className="text-[9px] font-black text-sky-400 hover:text-sky-300 uppercase tracking-widest flex items-center gap-1"
-                                >
-                                  <Eye size={10} /> Lihat
-                                </button>
+                                <button onClick={() => viewFile(asg.fileUrl)} className="text-[9px] font-black text-sky-400 hover:text-sky-300 uppercase tracking-widest flex items-center gap-1"><Eye size={10} /> Lihat</button>
                                 {asg.grade === null && (
-                                  <button 
-                                    onClick={() => onDeleteAssignment(asg.id)}
-                                    className="text-[9px] font-black text-rose-400 hover:text-rose-300 uppercase tracking-widest flex items-center gap-1"
-                                  >
+                                  <button onClick={() => {
+                                    if(onDeleteAssignment(asg.id)) {
+                                      // Logika hapus berhasil
+                                    }
+                                  }} className="text-[9px] font-black text-rose-400 hover:text-rose-300 uppercase tracking-widest flex items-center gap-1">
                                     <Trash2 size={10} /> Hapus
                                   </button>
                                 )}
@@ -195,14 +231,11 @@ const ModuleView: React.FC<Props> = ({ module, user, assignments, onBack, onNext
                           </div>
                           {asg.grade !== null && <span className="bg-emerald-500 text-white px-3 py-1 rounded-lg text-[10px] font-black shadow-lg">NILAI: {asg.grade}</span>}
                         </div>
-                        
                         {asg.feedback && (
                           <div className="bg-sky-500/10 border border-sky-500/20 p-4 rounded-2xl mt-2 relative">
-                            <div className="absolute -top-3 -right-2 bg-sky-500 p-1.5 rounded-full text-white">
-                              <MessageSquareQuote size={12} />
-                            </div>
+                            <div className="absolute -top-3 -right-2 bg-sky-500 p-1.5 rounded-full text-white shadow-lg"><MessageSquareQuote size={12} /></div>
                             <p className="text-[10px] font-black text-sky-400 uppercase tracking-widest mb-1">Feedback Guru:</p>
-                            <p className="text-xs text-slate-200 italic leading-relaxed font-medium">"{asg.feedback}"</p>
+                            <p className="text-xs text-slate-200 italic leading-relaxed font-bold">"{asg.feedback}"</p>
                           </div>
                         )}
                       </div>
@@ -211,15 +244,25 @@ const ModuleView: React.FC<Props> = ({ module, user, assignments, onBack, onNext
                 </div>
               </div>
 
-              <div className="bg-gradient-to-br from-sky-600 to-sky-700 p-8 rounded-[3rem] shadow-2xl text-center text-white">
-                <h4 className="font-black mb-2 uppercase tracking-widest text-sm">Evaluasi Mandiri</h4>
-                <p className="text-sky-100 text-xs font-bold mb-8 leading-relaxed">Siap untuk menguji pemahaman Anda? Kerjakan kuis interaktif sekarang.</p>
-                <button 
-                  onClick={onNextToQuiz} 
-                  className="w-full py-5 bg-white text-sky-700 font-black rounded-2xl hover:bg-sky-50 transition-all shadow-xl shadow-sky-800/20 uppercase tracking-widest text-sm"
-                >
-                  Mulai Kuis Sekarang
-                </button>
+              <div className="bg-gradient-to-br from-indigo-600 to-sky-700 p-10 rounded-[3rem] shadow-2xl text-center text-white relative overflow-hidden group">
+                <div className="absolute -top-5 -right-5 opacity-10 group-hover:scale-110 transition-transform"><Globe size={100} /></div>
+                <h4 className="font-black mb-2 uppercase tracking-widest text-sm relative z-10">Zona Evaluasi</h4>
+                <p className="text-sky-100 text-xs font-bold mb-8 leading-relaxed relative z-10">Uji pemahaman Anda melalui kuis internal atau kuis eksternal dari Guru.</p>
+                
+                <div className="space-y-4 relative z-10">
+                  <button onClick={onNextToQuiz} className="w-full py-5 bg-white text-sky-700 font-black rounded-2xl hover:bg-sky-50 transition-all shadow-xl shadow-sky-800/20 uppercase tracking-widest text-[11px]">Mulai Kuis Internal</button>
+                  
+                  {module.externalQuizUrl && (
+                    <a 
+                      href={module.externalQuizUrl} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="w-full py-5 bg-indigo-500/30 border border-indigo-400/30 text-white font-black rounded-2xl hover:bg-indigo-500 transition-all uppercase tracking-widest text-[11px] flex items-center justify-center gap-2"
+                    >
+                      Buka di {module.externalQuizType || 'Kuis Eksternal'} <ExternalLink size={16} />
+                    </a>
+                  )}
+                </div>
               </div>
             </div>
           </div>

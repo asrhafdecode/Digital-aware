@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { getInitialState, saveState } from './services/stateService';
 import { AppState, UserRole, Module, StudentAssignment, StudentQuizResult, QuizAnswerRecord } from './types';
 import LandingPage from './components/LandingPage';
@@ -52,14 +52,22 @@ const App: React.FC = () => {
     }));
   };
 
-  const handleDeleteAssignment = (assignmentId: string) => {
-    if (window.confirm('Apakah Anda yakin ingin menghapus tugas ini?')) {
-      setState(prev => ({
-        ...prev,
-        assignments: prev.assignments.filter(a => a.id !== assignmentId)
-      }));
+  // Fungsi penghapusan yang lebih robust dengan konfirmasi terpadu
+  const handleDeleteAssignment = useCallback((assignmentId: string): boolean => {
+    const isConfirmed = window.confirm('Konfirmasi: Apakah Anda yakin ingin menghapus berkas ini? Tugas yang sudah dihapus tidak dapat dipulihkan.');
+    
+    if (isConfirmed) {
+      setState(prev => {
+        const updatedAssignments = prev.assignments.filter(a => a.id !== assignmentId);
+        return {
+          ...prev,
+          assignments: updatedAssignments
+        };
+      });
+      return true;
     }
-  };
+    return false;
+  }, []);
 
   const handleGradeUpdate = (assignmentId: string, grade: number, feedback: string) => {
     setState(prev => ({
@@ -68,7 +76,7 @@ const App: React.FC = () => {
     }));
   };
 
-  const handleQuizGradeUpdate = (resultId: string, newScore: number, updatedAnswers?: QuizAnswerRecord[]) => {
+  const handleQuizGradeUpdate = (resultId: string, newScore: number, feedback?: string, updatedAnswers?: QuizAnswerRecord[]) => {
     setState(prev => ({
       ...prev,
       quizResults: prev.quizResults.map(r => 
@@ -76,6 +84,7 @@ const App: React.FC = () => {
           ? { 
               ...r, 
               score: newScore, 
+              feedback: feedback,
               isManualOverride: true, 
               studentAnswers: updatedAnswers || r.studentAnswers 
             } 
@@ -145,7 +154,8 @@ const App: React.FC = () => {
                 moduleId: activeModule.id,
                 score,
                 timestamp: new Date().toISOString(),
-                studentAnswers: answers
+                studentAnswers: answers,
+                feedback: ''
               }]
             }));
             setView('student-dashboard');
@@ -162,6 +172,7 @@ const App: React.FC = () => {
           onLogout={handleLogout}
           onUpdateGrade={handleGradeUpdate}
           onUpdateQuizGrade={handleQuizGradeUpdate}
+          onDeleteAssignment={handleDeleteAssignment}
         />
       )}
     </div>
